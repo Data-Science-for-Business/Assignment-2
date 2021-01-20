@@ -94,6 +94,8 @@ fixNAs<-function(data_frame){
 Credit_Data<-fixNAs(Credit_Data) #Apply fixNAs function to the data to fix missing values
 New_Apps_Data<-fixNAs(New_Apps_Data) #Apply fixNAs function to the data to fix missing values
 
+str(Credit_Data) # test
+
 
 #----------------------------------------------------------------------------------
 #-----------------------As far as I got tonight -----------------------------------
