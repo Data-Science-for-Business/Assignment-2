@@ -4,12 +4,12 @@
 
 if("pacman" %in% rownames(installed.packages()) == FALSE) {install.packages("pacman")}
 
-pacman::p_load("caret","ROCR","lift","glmnet","MASS","e1071", "tidyverse", "dplyr", "GGally") #Check, and if needed install the necessary packages
+pacman::p_load("caret","ROCR","lift","glmnet","MASS","e1071", 
+               "tidyverse", "dplyr", "GGally", "ggplot2", "hrbrthemes") #Check, and if needed install the necessary packages
 
 cd_df<-read.csv(file.choose(), na.strings=c(""," ","NA"), header=TRUE, stringsAsFactors = TRUE, sep = ";") # Load "CSV_DSB_S8_9_Credit"
 
 str(cd_df) # See if some data types were misclassified when importing data from CSV
-View(cd_df) #cd_df stands for "credit data dataframe"
 
 #------------------------------------------------------------------------------#
 #---------------------------CLEAN THE DATA-------------------------------------#
@@ -51,7 +51,6 @@ cd_df = subset(cd_df, select = -c(X))
 
 str(cd_df)
 View(cd_df)
-
 
 #------------------------------------------------------------------------------#
 #---------------------------CHECK FOR MISSING VALUES---------------------------#
@@ -100,6 +99,11 @@ GGally::ggcorr(cd_df[,-9], hjust = 1, layout.exp = 2, label = T, label_size = 2.
 #------------------------------------------------------------------------------#
 #---------------------------FEATURE ENGINEERING--------------------------------#
 #------------------------------------------------------------------------------#
+
+View(cd_df)
+
+# %delta and abs delta with previous period
+# 
 
 ### 1. Look at the delta's between periods (e.g. diff Bill_AMT2 -> Bill_AMT1)
 
@@ -161,19 +165,26 @@ cd_df_model_logistic_stepwiseAIC_probabilities
 #--------------------FIND OPTIMAL T-THRESHOLD----------------------------------#
 #------------------------------------------------------------------------------#
 
+counter <- 0
 t_threshold <- 0
 t_threshold <- as.double(t_threshold)
 best_t_threshold <- 0
 max_expected_return <- 0
 max_confusion_matrix <- 0
 
+my_t_threshold_list <- list()
+my_expected_value_list <- list()
+
 while (t_threshold < 0.95) {
   t_threshold = as.double(t_threshold+0.01)
+  counter = counter+1
+  
+  my_t_threshold_list[counter] <- t_threshold
   
   print(paste0("Current T-threshold applied to classification: ", t_threshold))
   
   cd_df_logistic_classification <-rep("1",nrow(cd_df_testing)) #Generate number of rows depending on size of training set
-  cd_df_logistic_classification[cd_df_model_logistic_stepwiseAIC_probabilities<0.22]="0"
+  cd_df_logistic_classification[cd_df_model_logistic_stepwiseAIC_probabilities<t_threshold]="0"
   
   print("T-threshold applied...")
   
@@ -182,10 +193,9 @@ while (t_threshold < 0.95) {
   cd_df_logistic_classification
   
   #Need to check if the predictor and actual outcomes have the same level
-  str(cd_df_logistic_classification)
+  #str(cd_df_logistic_classification)
   #levels(cd_df_testing$default_0) <- list("0" = "1", "1" = "2")
-  str(cd_df_testing$default_0)
-  print("")
+  #str(cd_df_testing$default_0)
   
   #----------------------------------------------------------------------------#
   #--------------------RESULTS: LOGISTIC REGRESSION----------------------------#
@@ -212,13 +222,12 @@ while (t_threshold < 0.95) {
   #--------------------RESULTS: BUSINESS OUTCOME---------------------------------#
   #------------------------------------------------------------------------------#
   
-  
   Default_Cost = -5000 #as provided in the case
   No_Default_Profit = 1500#as provided in the case
   
   expected_return = (Default_Cost*False_non_defaulter_FN) + (No_Default_Profit*True_non_defaulter_TP)
-  
   print(paste0("The expected return with this T-threshold is: ", expected_return))
+  my_expected_value_list[counter] <- expected_return
   
   if (expected_return > max_expected_return) {
     best_t_threshold <- t_threshold
@@ -234,6 +243,23 @@ while (t_threshold < 0.95) {
 
 print(paste0("The maximum expected return is realized with T-threshold = ", best_t_threshold))
 print(paste0("The maximum expected return equals ", max_expected_return))
+
+###Final output logistic regression
+my_t_threshold_list
+my_expected_value_list
+
+output_logistic_exp_value <- do.call(rbind, Map(data.frame, A=my_t_threshold_list, B=my_expected_value_list))
+
+plot(output_logistic_exp_value$A, output_logistic_exp_value$B)  
+
+ggplot(output_logistic_exp_value, aes(x=A, y=B)) +
+  geom_line(color="darkgrey") +
+  geom_point(shape=21, color="black", fill="#69b3a2", size=4) +
+  theme_ipsum() +
+  ggtitle("T-Threshold (#) vs. Total Expected Value ($)") +
+  xlab("T-threshold") +
+  ylab("Expected Return")
+
 
 ##TO do: 
 #1.Create diff features, 
