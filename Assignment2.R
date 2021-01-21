@@ -8,6 +8,7 @@ pacman::p_load("caret","ROCR","lift","glmnet","MASS","e1071",
                "tidyverse", "dplyr", "GGally", "ggplot2", "hrbrthemes") #Check, and if needed install the necessary packages
 
 cd_df<-read.csv(file.choose(), na.strings=c(""," ","NA"), header=TRUE, stringsAsFactors = TRUE, sep = ";") # Load "CSV_DSB_S8_9_Credit"
+cd_df_copy1 <- cd_df 
 
 str(cd_df) # See if some data types were misclassified when importing data from CSV
 
@@ -156,28 +157,37 @@ cd_df$Limit_Alert_4 <- as.factor(ifelse(cd_df$PER_Balance_remaining_4 <0 , 1, 0)
 cd_df$Limit_Alert_5 <- as.factor(ifelse(cd_df$PER_Balance_remaining_5 <0 , 1, 0))
 cd_df$Limit_Alert_6 <- as.factor(ifelse(cd_df$PER_Balance_remaining_6 <0 , 1, 0))
 
-view(cd_df)
 str(cd_df)
 
-
-####Feature engineering backlog##########
+####Feature engineering using COPY of "cd_df" ##########
 #---------------------------------------#
 #Feature_6: Avg. Pay_X -> Pay_Y category
+cd_df[, "mean_pay_category"] <- apply(cd_df_copy1[, 7:12], 1, mean)
 
 #Feature_7: Max. Pay Category
+cd_df[, "Max_Pay_Category"] <- apply(cd_df_copy1[, 7:12], 1, max)
 
 #Feature_8: Range. Pay Category
+cd_df[, "Range_Pay_Category"] <- (apply(cd_df_copy1[, 7:12], 1, max) - apply(cd_df_copy1[, 7:12], 1, min)) 
 
 #Feature_9: Abs range Bill Amount
+cd_df[, "abs_range_bill_amt"] <- (apply(cd_df_copy1[, 13:18], 1, max) - apply(cd_df_copy1[, 13:18], 1, min))
 
 #Feature_10: Abs range bill as % of limit balance
+cd_df[, "PER_abs_range_bill_amt_vs_Lim_balance"] <- (apply(cd_df_copy1[, 13:18], 1, max) - apply(cd_df_copy1[, 13:18], 1, min))/cd_df_copy1$LIMIT_BAL
 
 #Feature_11: Max delta Pay_Amount_t vs. Bill_Amount_t-1 --> Find the maximum difference between a bill amount (t-1) and the amount actually paid (t)
+cd_df_copy1$delta_Pay_t1_vs_bill_t_minus_1 <- cd_df_copy1$PAY_1 - cd_df_copy1$BILL_AMT2
+cd_df_copy1$delta_Pay_t2_vs_bill_t_minus_3 <- cd_df_copy1$PAY_2 - cd_df_copy1$BILL_AMT3
+cd_df_copy1$delta_Pay_t3_vs_bill_t_minus_4 <- cd_df_copy1$PAY_3 - cd_df_copy1$BILL_AMT4
+cd_df_copy1$delta_Pay_t4_vs_bill_t_minus_5 <- cd_df_copy1$PAY_4 - cd_df_copy1$BILL_AMT5
+cd_df_copy1$delta_Pay_t5_vs_bill_t_minus_6 <- cd_df_copy1$PAY_5 - cd_df_copy1$BILL_AMT6
 
+cd_df$Max_Delta_Pay_vs_Bill <- apply(cd_df_copy1[, 27:31], 1, max)
 
+View(cd_df_copy1)
 View(cd_df)
 View(colSums(is.na(cd_df)))
-
 
 #------------------------------------------------------------------------------#
 #---------------------------CREATE TRAIN AND TEST SET--------------------------#
@@ -206,13 +216,14 @@ cd_df_model_logistic<-glm(default_0 ~
                             EDUCATION + 
                             MARRIAGE +
                             AGE + 
-                            PAY_1 + PAY_2 + PAY_3 + PAY_4 + PAY_5 + PAY_6 + 
+                            PAY_1 + PAY_2 + PAY_3 + PAY_4 + PAY_5 + PAY_6 + NEG_BILL +
                             BILL_AMT1 + BILL_AMT2 + BILL_AMT3 + BILL_AMT4 + BILL_AMT5 + BILL_AMT6 + 
                             PAY_AMT1 + PAY_AMT2 + PAY_AMT3 + PAY_AMT4 + PAY_AMT5 + PAY_AMT6 +
                             #Delta_Bill_AMT1_vs_Bill_AMT2 + Delta_Bill_AMT2_vs_Bill_AMT3 + Delta_Bill_AMT3_vs_Bill_AMT4 +Delta_Bill_AMT4_vs_Bill_AMT5 + Delta_Bill_AMT5_vs_Bill_AMT6 + 
                             PER_Delta_Bill_AMT1_vs_Bill_AMT2 + PER_Delta_Bill_AMT2_vs_Bill_AMT3 + PER_Delta_Bill_AMT3_vs_Bill_AMT4 + PER_Delta_Bill_AMT4_vs_Bill_AMT5 + PER_Delta_Bill_AMT5_vs_Bill_AMT6 +
                             #Balance_remaining_1 + Balance_remaining_2 + Balance_remaining_3 + Balance_remaining_4 +Balance_remaining_5 + Balance_remaining_6 +
-                            Limit_Alert_1 + Limit_Alert_2 + Limit_Alert_3 + Limit_Alert_4 + Limit_Alert_5 +Limit_Alert_6, 
+                            Limit_Alert_1 + Limit_Alert_2 + Limit_Alert_3 + Limit_Alert_4 + Limit_Alert_5 +Limit_Alert_6 +
+                            mean_pay_category + Max_Pay_Category + Range_Pay_Category + abs_range_bill_amt + PER_abs_range_bill_amt_vs_Lim_balance + Max_Delta_Pay_vs_Bill,
                             data=cd_df_training, family="binomial"(link="logit"))
 
 summary(cd_df_model_logistic) 
