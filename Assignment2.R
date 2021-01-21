@@ -72,6 +72,9 @@ cd_df$NEG_BILL[cd_df$BILL_AMT1 <0] <- 1
 #------------------------------------------------------------------------------#
 #---------------------------CHECK FOR RARE VALUES------------------------------#
 #------------------------------------------------------------------------------#
+
+
+#method 1
 combinerarecategories <- function(data_frame,mincount){ 
   for (i in 2 : ncol(data_frame)){
     a<-data_frame[,i]
@@ -84,6 +87,22 @@ combinerarecategories <- function(data_frame,mincount){
 cd_df <- combinerarecategories(cd_df,20) #combine categories with <20 values in STCdata into "Other"
 
 str(cd_df)
+
+
+#method 2 (manual)
+#cd_df$PAY_1[cd_df$PAY_1 == 7] <- 8
+#cd_df$PAY_2[cd_df$PAY_2 == 8] <- 7
+#cd_df$PAY_2[cd_df$PAY_2 == 6] <- 5
+#cd_df$PAY_3[cd_df$PAY_3 == 8] <- 7
+#cd_df$PAY_3[cd_df$PAY_3 == 1] <- 2
+#cd_df$PAY_4[cd_df$PAY_4 == 8] <- 7
+#cd_df$PAY_4[cd_df$PAY_4 == 6] <- 5
+#cd_df$PAY_4[cd_df$PAY_4 == 1] <- 2
+#cd_df$PAY_5[cd_df$PAY_5 == 8] <- 7
+#cd_df$PAY_5[cd_df$PAY_5 == 6] <- 5
+#cd_df$PAY_6[cd_df$PAY_6 == 8] <- 7
+#cd_df$PAY_6[cd_df$PAY_6 == 5] <- 6
+
 
 #------------------------------------------------------------------------------#
 #-----------------------BASIC EXPLORATORY ANALYSIS-----------------------------#
@@ -122,12 +141,12 @@ cd_df$Balance_remaining_5 <- as.integer(cd_df$LIMIT_BAL - cd_df$BILL_AMT5)
 cd_df$Balance_remaining_6 <- as.integer(cd_df$LIMIT_BAL - cd_df$BILL_AMT6)
 
 #Feature_4: % balance remaining -> (Limit_amount - Bill_amount)/Limit_amount
-cd_df$PER_Balance_remaining_1 <- as.numeric((cd_df$LIMIT_BAL - cd_df$BILL_AMT1)/cd_df$LIMIT_BA)
-cd_df$PER_Balance_remaining_2 <- as.numeric((cd_df$LIMIT_BAL - cd_df$BILL_AMT2)/cd_df$LIMIT_BA)
-cd_df$PER_Balance_remaining_3 <- as.numeric((cd_df$LIMIT_BAL - cd_df$BILL_AMT3)/cd_df$LIMIT_BA)
-cd_df$PER_Balance_remaining_4 <- as.numeric((cd_df$LIMIT_BAL - cd_df$BILL_AMT4)/cd_df$LIMIT_BA)
-cd_df$PER_Balance_remaining_5 <- as.numeric((cd_df$LIMIT_BAL - cd_df$BILL_AMT5)/cd_df$LIMIT_BA)
-cd_df$PER_Balance_remaining_6 <- as.numeric((cd_df$LIMIT_BAL - cd_df$BILL_AMT6)/cd_df$LIMIT_BA)
+cd_df$PER_Balance_remaining_1 <- as.numeric((cd_df$LIMIT_BAL - cd_df$BILL_AMT1)/cd_df$LIMIT_BAL)
+cd_df$PER_Balance_remaining_2 <- as.numeric((cd_df$LIMIT_BAL - cd_df$BILL_AMT2)/cd_df$LIMIT_BAL)
+cd_df$PER_Balance_remaining_3 <- as.numeric((cd_df$LIMIT_BAL - cd_df$BILL_AMT3)/cd_df$LIMIT_BAL)
+cd_df$PER_Balance_remaining_4 <- as.numeric((cd_df$LIMIT_BAL - cd_df$BILL_AMT4)/cd_df$LIMIT_BAL)
+cd_df$PER_Balance_remaining_5 <- as.numeric((cd_df$LIMIT_BAL - cd_df$BILL_AMT5)/cd_df$LIMIT_BAL)
+cd_df$PER_Balance_remaining_6 <- as.numeric((cd_df$LIMIT_BAL - cd_df$BILL_AMT6)/cd_df$LIMIT_BAL)
 
 #Feature_5: Flag --> bill_amount > limit amount 
 cd_df$Limit_Alert_1 <- as.factor(ifelse(cd_df$PER_Balance_remaining_1 <0 , 1, 0))
@@ -301,6 +320,7 @@ print(paste0("The maximum expected return equals ", max_expected_return))
 ###Final output logistic regression
 my_t_threshold_list
 my_expected_value_list
+
 
 output_logistic_exp_value <- do.call(rbind, Map(data.frame, A=my_t_threshold_list, B=my_expected_value_list))
 
