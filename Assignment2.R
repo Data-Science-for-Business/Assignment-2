@@ -8,6 +8,7 @@ pacman::p_load("caret","ROCR","lift","glmnet","MASS","e1071",
                "tidyverse", "dplyr", "GGally", "ggplot2", "hrbrthemes") #Check, and if needed install the necessary packages
 
 cd_df<-read.csv(file.choose(), na.strings=c(""," ","NA"), header=TRUE, stringsAsFactors = TRUE, sep = ";") # Load "CSV_DSB_S8_9_Credit"
+cd_df_copy1 <- cd_df 
 
 str(cd_df) # See if some data types were misclassified when importing data from CSV
 
@@ -72,6 +73,9 @@ cd_df$NEG_BILL[cd_df$BILL_AMT1 <0] <- 1
 #------------------------------------------------------------------------------#
 #---------------------------CHECK FOR RARE VALUES------------------------------#
 #------------------------------------------------------------------------------#
+
+
+#method 1
 combinerarecategories <- function(data_frame,mincount){ 
   for (i in 2 : ncol(data_frame)){
     a<-data_frame[,i]
@@ -84,6 +88,22 @@ combinerarecategories <- function(data_frame,mincount){
 cd_df <- combinerarecategories(cd_df,20) #combine categories with <20 values in STCdata into "Other"
 
 str(cd_df)
+
+
+#method 2 (manual)
+#cd_df$PAY_1[cd_df$PAY_1 == 7] <- 8
+#cd_df$PAY_2[cd_df$PAY_2 == 8] <- 7
+#cd_df$PAY_2[cd_df$PAY_2 == 6] <- 5
+#cd_df$PAY_3[cd_df$PAY_3 == 8] <- 7
+#cd_df$PAY_3[cd_df$PAY_3 == 1] <- 2
+#cd_df$PAY_4[cd_df$PAY_4 == 8] <- 7
+#cd_df$PAY_4[cd_df$PAY_4 == 6] <- 5
+#cd_df$PAY_4[cd_df$PAY_4 == 1] <- 2
+#cd_df$PAY_5[cd_df$PAY_5 == 8] <- 7
+#cd_df$PAY_5[cd_df$PAY_5 == 6] <- 5
+#cd_df$PAY_6[cd_df$PAY_6 == 8] <- 7
+#cd_df$PAY_6[cd_df$PAY_6 == 5] <- 6
+
 
 #------------------------------------------------------------------------------#
 #-----------------------BASIC EXPLORATORY ANALYSIS-----------------------------#
@@ -122,12 +142,12 @@ cd_df$Balance_remaining_5 <- as.integer(cd_df$LIMIT_BAL - cd_df$BILL_AMT5)
 cd_df$Balance_remaining_6 <- as.integer(cd_df$LIMIT_BAL - cd_df$BILL_AMT6)
 
 #Feature_4: % balance remaining -> (Limit_amount - Bill_amount)/Limit_amount
-cd_df$PER_Balance_remaining_1 <- as.numeric((cd_df$LIMIT_BAL - cd_df$BILL_AMT1)/cd_df$LIMIT_BA)
-cd_df$PER_Balance_remaining_2 <- as.numeric((cd_df$LIMIT_BAL - cd_df$BILL_AMT2)/cd_df$LIMIT_BA)
-cd_df$PER_Balance_remaining_3 <- as.numeric((cd_df$LIMIT_BAL - cd_df$BILL_AMT3)/cd_df$LIMIT_BA)
-cd_df$PER_Balance_remaining_4 <- as.numeric((cd_df$LIMIT_BAL - cd_df$BILL_AMT4)/cd_df$LIMIT_BA)
-cd_df$PER_Balance_remaining_5 <- as.numeric((cd_df$LIMIT_BAL - cd_df$BILL_AMT5)/cd_df$LIMIT_BA)
-cd_df$PER_Balance_remaining_6 <- as.numeric((cd_df$LIMIT_BAL - cd_df$BILL_AMT6)/cd_df$LIMIT_BA)
+cd_df$PER_Balance_remaining_1 <- as.numeric((cd_df$LIMIT_BAL - cd_df$BILL_AMT1)/cd_df$LIMIT_BAL)
+cd_df$PER_Balance_remaining_2 <- as.numeric((cd_df$LIMIT_BAL - cd_df$BILL_AMT2)/cd_df$LIMIT_BAL)
+cd_df$PER_Balance_remaining_3 <- as.numeric((cd_df$LIMIT_BAL - cd_df$BILL_AMT3)/cd_df$LIMIT_BAL)
+cd_df$PER_Balance_remaining_4 <- as.numeric((cd_df$LIMIT_BAL - cd_df$BILL_AMT4)/cd_df$LIMIT_BAL)
+cd_df$PER_Balance_remaining_5 <- as.numeric((cd_df$LIMIT_BAL - cd_df$BILL_AMT5)/cd_df$LIMIT_BAL)
+cd_df$PER_Balance_remaining_6 <- as.numeric((cd_df$LIMIT_BAL - cd_df$BILL_AMT6)/cd_df$LIMIT_BAL)
 
 #Feature_5: Flag --> bill_amount > limit amount 
 cd_df$Limit_Alert_1 <- as.factor(ifelse(cd_df$PER_Balance_remaining_1 <0 , 1, 0))
@@ -137,28 +157,37 @@ cd_df$Limit_Alert_4 <- as.factor(ifelse(cd_df$PER_Balance_remaining_4 <0 , 1, 0)
 cd_df$Limit_Alert_5 <- as.factor(ifelse(cd_df$PER_Balance_remaining_5 <0 , 1, 0))
 cd_df$Limit_Alert_6 <- as.factor(ifelse(cd_df$PER_Balance_remaining_6 <0 , 1, 0))
 
-view(cd_df)
 str(cd_df)
 
-
-####Feature engineering backlog##########
+####Feature engineering using COPY of "cd_df" ##########
 #---------------------------------------#
 #Feature_6: Avg. Pay_X -> Pay_Y category
+cd_df[, "mean_pay_category"] <- apply(cd_df_copy1[, 7:12], 1, mean)
 
 #Feature_7: Max. Pay Category
+cd_df[, "Max_Pay_Category"] <- apply(cd_df_copy1[, 7:12], 1, max)
 
 #Feature_8: Range. Pay Category
+cd_df[, "Range_Pay_Category"] <- (apply(cd_df_copy1[, 7:12], 1, max) - apply(cd_df_copy1[, 7:12], 1, min)) 
 
 #Feature_9: Abs range Bill Amount
+cd_df[, "abs_range_bill_amt"] <- (apply(cd_df_copy1[, 13:18], 1, max) - apply(cd_df_copy1[, 13:18], 1, min))
 
 #Feature_10: Abs range bill as % of limit balance
+cd_df[, "PER_abs_range_bill_amt_vs_Lim_balance"] <- (apply(cd_df_copy1[, 13:18], 1, max) - apply(cd_df_copy1[, 13:18], 1, min))/cd_df_copy1$LIMIT_BAL
 
 #Feature_11: Max delta Pay_Amount_t vs. Bill_Amount_t-1 --> Find the maximum difference between a bill amount (t-1) and the amount actually paid (t)
+cd_df_copy1$delta_Pay_t1_vs_bill_t_minus_1 <- cd_df_copy1$PAY_1 - cd_df_copy1$BILL_AMT2
+cd_df_copy1$delta_Pay_t2_vs_bill_t_minus_3 <- cd_df_copy1$PAY_2 - cd_df_copy1$BILL_AMT3
+cd_df_copy1$delta_Pay_t3_vs_bill_t_minus_4 <- cd_df_copy1$PAY_3 - cd_df_copy1$BILL_AMT4
+cd_df_copy1$delta_Pay_t4_vs_bill_t_minus_5 <- cd_df_copy1$PAY_4 - cd_df_copy1$BILL_AMT5
+cd_df_copy1$delta_Pay_t5_vs_bill_t_minus_6 <- cd_df_copy1$PAY_5 - cd_df_copy1$BILL_AMT6
 
+cd_df$Max_Delta_Pay_vs_Bill <- apply(cd_df_copy1[, 27:31], 1, max)
 
+View(cd_df_copy1)
 View(cd_df)
 View(colSums(is.na(cd_df)))
-
 
 #------------------------------------------------------------------------------#
 #---------------------------CREATE TRAIN AND TEST SET--------------------------#
@@ -187,14 +216,15 @@ cd_df_model_logistic<-glm(default_0 ~
                             EDUCATION + 
                             MARRIAGE +
                             AGE + 
-                            PAY_1 + PAY_2 + PAY_3 + PAY_4 + PAY_5 + PAY_6 + 
+                            PAY_1 + PAY_2 + PAY_3 + PAY_4 + PAY_5 + PAY_6 + NEG_BILL +
                             BILL_AMT1 + BILL_AMT2 + BILL_AMT3 + BILL_AMT4 + BILL_AMT5 + BILL_AMT6 + 
                             PAY_AMT1 + PAY_AMT2 + PAY_AMT3 + PAY_AMT4 + PAY_AMT5 + PAY_AMT6 +
                             #Delta_Bill_AMT1_vs_Bill_AMT2 + Delta_Bill_AMT2_vs_Bill_AMT3 + Delta_Bill_AMT3_vs_Bill_AMT4 +Delta_Bill_AMT4_vs_Bill_AMT5 + Delta_Bill_AMT5_vs_Bill_AMT6 + 
                             PER_Delta_Bill_AMT1_vs_Bill_AMT2 + PER_Delta_Bill_AMT2_vs_Bill_AMT3 + PER_Delta_Bill_AMT3_vs_Bill_AMT4 + PER_Delta_Bill_AMT4_vs_Bill_AMT5 + PER_Delta_Bill_AMT5_vs_Bill_AMT6 +
                             #Balance_remaining_1 + Balance_remaining_2 + Balance_remaining_3 + Balance_remaining_4 +Balance_remaining_5 + Balance_remaining_6 +
-                            Limit_Alert_1 + Limit_Alert_2 + Limit_Alert_3 + Limit_Alert_4 + Limit_Alert_5 +Limit_Alert_6, 
-                            data=cd_df_training, family="binomial"(link="logit"))
+                            Limit_Alert_1 + Limit_Alert_2 + Limit_Alert_3 + Limit_Alert_4 + Limit_Alert_5 +Limit_Alert_6 +
+                            mean_pay_category + Max_Pay_Category + Range_Pay_Category + abs_range_bill_amt + PER_abs_range_bill_amt_vs_Lim_balance + Max_Delta_Pay_vs_Bill,
+                          data=cd_df_training, family="binomial"(link="logit"))
 
 summary(cd_df_model_logistic) 
 
@@ -302,6 +332,7 @@ print(paste0("The maximum expected return equals ", max_expected_return))
 my_t_threshold_list
 my_expected_value_list
 
+
 output_logistic_exp_value <- do.call(rbind, Map(data.frame, A=my_t_threshold_list, B=my_expected_value_list))
 
 ggplot(output_logistic_exp_value, aes(x=A, y=B)) +
@@ -321,43 +352,6 @@ ggplot(output_logistic_exp_value, aes(x=A, y=B)) +
 #5.Plot the payoffs for different T-thresholds
 
 
-#------------------------------------------------------------------------------#
-#----------------------------- XGBOOST MODEL ----------------------------------#
-#------------------------------------------------------------------------------#
-
-pacman::p_load("caret","ROCR","lift","xgboost") #Check, and if needed install the necessary packages
-
-#use same training and testing data to ensure like-for-like comparison
-#note - additional memory must be allocated to r before running this code
-
-memory.limit(size=6000000)
-
-training.XG <-model.matrix(default_0 ~ ., data = cd_df_training)
-testing.XG <-model.matrix(default_0 ~ ., data = cd_df_testing)
-
-model_XGboost<-xgboost(data = data.matrix(training.XG[,-1]), 
-                       label = as.numeric(as.character(cd_df_training$default_0)), 
-                       eta = 0.1,       # hyperparameter: learning rate 
-                       max_depth = 20,  # hyperparameter: size of a tree in each boosting iteration
-                       nround=50,       # hyperparameter: number of boosting iterations  
-                       objective = "binary:logistic"
-)
-
-XGboost_prediction<-predict(model_XGboost,newdata=testing.XG[,-1], type="response") #Predict classification (for confusion matrix)
-confusionMatrix(as.factor(ifelse(XGboost_prediction>0.22,1,0)),cd_df_testing$default_0,positive="1") #Display confusion matrix
-
-####ROC Curve
-XGboost_pred_testing <- prediction(XGboost_prediction, cd_df_testing$default_0) #Calculate errors
-XGboost_ROC_testing <- performance(XGboost_pred_testing,"tpr","fpr") #Create ROC curve data
-plot(XGboost_ROC_testing) #Plot ROC curve
-
-####AUC
-auc.tmp <- performance(XGboost_pred_testing,"auc") #Create AUC data
-XGboost_auc_testing <- as.numeric(auc.tmp@y.values) #Calculate AUC
-XGboost_auc_testing #Display AUC value: 90+% - excellent, 80-90% - very good, 70-80% - good, 60-70% - so so, below 60% - not much value
-
-#### Lift chart
-plotLift(XGboost_prediction, cd_df_testing$default_0, cumulative = TRUE, n.buckets = 10) # Plot Lift chart
 
 
 
