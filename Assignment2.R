@@ -219,12 +219,12 @@ cd_df_model_logistic<-glm(default_0 ~
                             AGE + 
                             PAY_1 + PAY_2 + PAY_3 + PAY_4 + PAY_5 + PAY_6 + NEG_BILL +
                             BILL_AMT1 + BILL_AMT2 + BILL_AMT3 + BILL_AMT4 + BILL_AMT5 + BILL_AMT6 + 
-                            PAY_AMT1 + PAY_AMT2 + PAY_AMT3 + PAY_AMT4 + PAY_AMT5 + PAY_AMT6,
+                            PAY_AMT1 + PAY_AMT2 + PAY_AMT3 + PAY_AMT4 + PAY_AMT5 + PAY_AMT6 +
                             #Delta_Bill_AMT1_vs_Bill_AMT2 + Delta_Bill_AMT2_vs_Bill_AMT3 + Delta_Bill_AMT3_vs_Bill_AMT4 +Delta_Bill_AMT4_vs_Bill_AMT5 + Delta_Bill_AMT5_vs_Bill_AMT6 + 
-                            #PER_Delta_Bill_AMT1_vs_Bill_AMT2 + PER_Delta_Bill_AMT2_vs_Bill_AMT3 + PER_Delta_Bill_AMT3_vs_Bill_AMT4 + PER_Delta_Bill_AMT4_vs_Bill_AMT5 + PER_Delta_Bill_AMT5_vs_Bill_AMT6 +
+                            PER_Delta_Bill_AMT1_vs_Bill_AMT2 + PER_Delta_Bill_AMT2_vs_Bill_AMT3 + PER_Delta_Bill_AMT3_vs_Bill_AMT4 + PER_Delta_Bill_AMT4_vs_Bill_AMT5 + PER_Delta_Bill_AMT5_vs_Bill_AMT6 +
                             #Balance_remaining_1 + Balance_remaining_2 + Balance_remaining_3 + Balance_remaining_4 +Balance_remaining_5 + Balance_remaining_6 +
-                            #Limit_Alert_1 + Limit_Alert_2 + Limit_Alert_3 + Limit_Alert_4 + Limit_Alert_5 +Limit_Alert_6 +
-                            #mean_pay_category + Max_Pay_Category + Range_Pay_Category + abs_range_bill_amt + PER_abs_range_bill_amt_vs_Lim_balance + Max_Delta_Pay_vs_Bill,
+                            Limit_Alert_1 + Limit_Alert_2 + Limit_Alert_3 + Limit_Alert_4 + Limit_Alert_5 +Limit_Alert_6 +
+                            mean_pay_category + Max_Pay_Category + Range_Pay_Category + abs_range_bill_amt + PER_abs_range_bill_amt_vs_Lim_balance + Max_Delta_Pay_vs_Bill,
                           data=cd_df_training, family="binomial"(link="logit"))
 
 summary(cd_df_model_logistic) 
