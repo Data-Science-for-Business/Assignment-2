@@ -47,7 +47,7 @@ cd_df$default_0 <- as.factor(cd_df$default_0)
 #colnames(cd_df)
 #cd_df = subset(cd_df, select = -c(default_0...))
 
-cd_df = subset(cd_df, select = -c(X))
+cd_df = subset(cd_df, select = -c(X))#deleting spurious column from csv modifications
 
 str(cd_df)
 
@@ -92,28 +92,28 @@ str(cd_df)
 #Correlation matrix
 GGally::ggcorr(cd_df[,-9], hjust = 1, layout.exp = 2, label = T, label_size = 2.9)
 
-#------------------------------------------------------------------------------#
-#---------------------------FEATURE ENGINEERING--------------------------------#
-#------------------------------------------------------------------------------#
+# #------------------------------------------------------------------------------#
+# #---------------------------FEATURE ENGINEERING--------------------------------#
+# #------------------------------------------------------------------------------#
 
 #Feature_1: difference with previous period bill amount
-cd_df$Delta_Bill_AMT1_vs_Bill_AMT2 <- as.integer(cd_df$BILL_AMT1 - cd_df$BILL_AMT2) #difference bill_AMT1 vs. bill_AMT2 
-cd_df$Delta_Bill_AMT2_vs_Bill_AMT3 <- as.integer(cd_df$BILL_AMT2 - cd_df$BILL_AMT3) #difference bill_AMT2 vs. bill_AMT3 
-cd_df$Delta_Bill_AMT3_vs_Bill_AMT4 <- as.integer(cd_df$BILL_AMT3 - cd_df$BILL_AMT4) #difference bill_AMT3 vs. bill_AMT4 
-cd_df$Delta_Bill_AMT4_vs_Bill_AMT5 <- as.integer(cd_df$BILL_AMT4 - cd_df$BILL_AMT5) #difference bill_AMT4 vs. bill_AMT5 
-cd_df$Delta_Bill_AMT5_vs_Bill_AMT6 <- as.integer(cd_df$BILL_AMT5 - cd_df$BILL_AMT6) #difference bill_AMT5 vs. bill_AMT6 
+cd_df$Delta_Bill_AMT1_vs_Bill_AMT2 <- as.integer(cd_df$BILL_AMT1 - cd_df$BILL_AMT2) #difference bill_AMT1 vs. bill_AMT2
+cd_df$Delta_Bill_AMT2_vs_Bill_AMT3 <- as.integer(cd_df$BILL_AMT2 - cd_df$BILL_AMT3) #difference bill_AMT2 vs. bill_AMT3
+cd_df$Delta_Bill_AMT3_vs_Bill_AMT4 <- as.integer(cd_df$BILL_AMT3 - cd_df$BILL_AMT4) #difference bill_AMT3 vs. bill_AMT4
+cd_df$Delta_Bill_AMT4_vs_Bill_AMT5 <- as.integer(cd_df$BILL_AMT4 - cd_df$BILL_AMT5) #difference bill_AMT4 vs. bill_AMT5
+cd_df$Delta_Bill_AMT5_vs_Bill_AMT6 <- as.integer(cd_df$BILL_AMT5 - cd_df$BILL_AMT6) #difference bill_AMT5 vs. bill_AMT6
 
 #Feature_2: % delta with previous period bill amount
-cd_df$PER_Delta_Bill_AMT1_vs_Bill_AMT2 <- as.double((cd_df$BILL_AMT1 - cd_df$BILL_AMT2)/cd_df$BILL_AMT2) #Percentage difference bill_AMT1 vs. bill_AMT2 
-cd_df$PER_Delta_Bill_AMT2_vs_Bill_AMT3 <- as.double((cd_df$BILL_AMT2 - cd_df$BILL_AMT3)/cd_df$BILL_AMT3) #Percentage difference bill_AMT2 vs. bill_AMT3 
-cd_df$PER_Delta_Bill_AMT3_vs_Bill_AMT4 <- as.double((cd_df$BILL_AMT3 - cd_df$BILL_AMT4)/cd_df$BILL_AMT4) #Percentage difference bill_AMT3 vs. bill_AMT4 
-cd_df$PER_Delta_Bill_AMT4_vs_Bill_AMT5 <- as.double((cd_df$BILL_AMT4 - cd_df$BILL_AMT5)/cd_df$BILL_AMT5) #Percentage difference bill_AMT4 vs. bill_AMT5 
-cd_df$PER_Delta_Bill_AMT5_vs_Bill_AMT6 <- as.double((cd_df$BILL_AMT5 - cd_df$BILL_AMT6)/cd_df$BILL_AMT5) #Percentage difference bill_AMT5 vs. bill_AMT6 
+cd_df$PER_Delta_Bill_AMT1_vs_Bill_AMT2 <- as.double((cd_df$BILL_AMT1 - cd_df$BILL_AMT2)/cd_df$BILL_AMT2) #Percentage difference bill_AMT1 vs. bill_AMT2
+cd_df$PER_Delta_Bill_AMT2_vs_Bill_AMT3 <- as.double((cd_df$BILL_AMT2 - cd_df$BILL_AMT3)/cd_df$BILL_AMT3) #Percentage difference bill_AMT2 vs. bill_AMT3
+cd_df$PER_Delta_Bill_AMT3_vs_Bill_AMT4 <- as.double((cd_df$BILL_AMT3 - cd_df$BILL_AMT4)/cd_df$BILL_AMT4) #Percentage difference bill_AMT3 vs. bill_AMT4
+cd_df$PER_Delta_Bill_AMT4_vs_Bill_AMT5 <- as.double((cd_df$BILL_AMT4 - cd_df$BILL_AMT5)/cd_df$BILL_AMT5) #Percentage difference bill_AMT4 vs. bill_AMT5
+cd_df$PER_Delta_Bill_AMT5_vs_Bill_AMT6 <- as.double((cd_df$BILL_AMT5 - cd_df$BILL_AMT6)/cd_df$BILL_AMT5) #Percentage difference bill_AMT5 vs. bill_AMT6
 
 cd_df[is.na(cd_df)] <- 0 #For feature #2, because we sometimes divided by 0, we produced NAN. Here I overwrote these NANs as 0
 cd_df <- cd_df %>% mutate_if(is.numeric, function(x) ifelse(is.infinite(x), 0, x)) #same, taking care of the NaNs
 
-#Feature_3: balance remaining -> Limit_amount - Bill_amount 
+#Feature_3: balance remaining -> Limit_amount - Bill_amount
 cd_df$Balance_remaining_1 <- as.integer(cd_df$LIMIT_BAL - cd_df$BILL_AMT1)
 cd_df$Balance_remaining_2 <- as.integer(cd_df$LIMIT_BAL - cd_df$BILL_AMT2)
 cd_df$Balance_remaining_3 <- as.integer(cd_df$LIMIT_BAL - cd_df$BILL_AMT3)
@@ -129,7 +129,7 @@ cd_df$PER_Balance_remaining_4 <- as.numeric((cd_df$LIMIT_BAL - cd_df$BILL_AMT4)/
 cd_df$PER_Balance_remaining_5 <- as.numeric((cd_df$LIMIT_BAL - cd_df$BILL_AMT5)/cd_df$LIMIT_BA)
 cd_df$PER_Balance_remaining_6 <- as.numeric((cd_df$LIMIT_BAL - cd_df$BILL_AMT6)/cd_df$LIMIT_BA)
 
-#Feature_5: Flag --> bill_amount > limit amount 
+#Feature_5: Flag --> bill_amount > limit amount
 cd_df$Limit_Alert_1 <- as.factor(ifelse(cd_df$PER_Balance_remaining_1 <0 , 1, 0))
 cd_df$Limit_Alert_2 <- as.factor(ifelse(cd_df$PER_Balance_remaining_2 <0 , 1, 0))
 cd_df$Limit_Alert_3 <- as.factor(ifelse(cd_df$PER_Balance_remaining_3 <0 , 1, 0))
@@ -165,11 +165,19 @@ View(colSums(is.na(cd_df)))
 #------------------------------------------------------------------------------#
 
 set.seed(77850) #set a random number generation seed to ensure that the split is the same everytime
-cd_df_inTrain <- createDataPartition(y = cd_df$default_0,
-                                     p = 0.8, list = FALSE)
+cd_df_in_non_holdout <- createDataPartition(y = cd_df$default_0,
+                                     p = 0.8, list = FALSE)#create partition for holdout and non
 
-cd_df_training <- cd_df[ cd_df_inTrain,]
-cd_df_testing <- cd_df[ -cd_df_inTrain,]
+cd_df_non_holdout <- cd_df[ cd_df_in_non_holdout,]
+cd_df_inTrain <- createDataPartition(y = cd_df_non_holdout$default_0,
+                                            p = 0.8, list = FALSE)#create partition for training from non-holdout partition
+cd_df_training <- cd_df_non_holdout[ cd_df_inTrain, ]
+cd_df_testing <- cd_df_non_holdout[ -cd_df_inTrain, ] #testing negative of training within non-holdout section
+cd_df_holdout <- cd_df[ -cd_df_in_non_holdout, ] #hold is negative of non-holdout
+
+cd_df_inDev <- createDataPartition(y = cd_df_non_holdout$default_0,
+                                 p = 0.05, list = FALSE)
+cd_df_dev <- cd_df_non_holdout[cd_df_inDev, ]
 
 colnames(cd_df_training)
 colnames(cd_df_testing)
