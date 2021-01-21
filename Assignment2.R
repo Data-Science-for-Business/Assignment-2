@@ -10,6 +10,7 @@ pacman::p_load("caret","ROCR","lift","glmnet","MASS","e1071",
 cd_df<-read.csv(file.choose(), na.strings=c(""," ","NA"), header=TRUE, stringsAsFactors = TRUE, sep = ";") # Load "CSV_DSB_S8_9_Credit"
 cd_df_copy1 <- cd_df 
 
+
 str(cd_df) # See if some data types were misclassified when importing data from CSV
 
 #------------------------------------------------------------------------------#
@@ -250,8 +251,8 @@ cd_df_model_logistic_stepwiseAIC_probabilities
 #------------------------------------------------------------------------------#
 
 counter <- 0
-t_threshold <- 0
-t_threshold <- as.double(t_threshold)
+t_threshold <- 0.001
+t_threshold <- as.numeric(t_threshold)
 best_t_threshold <- 0
 max_expected_return <- 0
 max_confusion_matrix <- 0
@@ -259,8 +260,8 @@ max_confusion_matrix <- 0
 my_t_threshold_list <- list()
 my_expected_value_list <- list()
 
-while (t_threshold < 0.95) {
-  t_threshold = as.double(t_threshold+0.01)
+while (t_threshold < 0.50) {
+  t_threshold = as.numeric(t_threshold+0.001)
   counter = counter+1
   
   my_t_threshold_list[counter] <- t_threshold
@@ -321,6 +322,7 @@ while (t_threshold < 0.95) {
     max_expected_return <- expected_return
   }
   
+  
   print("")
   print("")
 }
@@ -331,7 +333,9 @@ print(paste0("The maximum expected return equals ", max_expected_return))
 ###Final output logistic regression
 my_t_threshold_list
 my_expected_value_list
-
+cm_1 <- confusionMatrix(cd_df_logistic_classification,
+                        cd_df_testing$default_0, 
+                        positive = "0")
 
 output_logistic_exp_value <- do.call(rbind, Map(data.frame, A=my_t_threshold_list, B=my_expected_value_list))
 
@@ -344,6 +348,7 @@ ggplot(output_logistic_exp_value, aes(x=A, y=B)) +
   ylab("Expected Return")
 
 
+
 ##TO do: 
 #1.Create diff features, 
 #2.finalize the logistic regression results, 
@@ -352,11 +357,146 @@ ggplot(output_logistic_exp_value, aes(x=A, y=B)) +
 #5.Plot the payoffs for different T-thresholds
 
 
+#------------------------------------------------------------------------------#
+#----------------------------- NEW APPLICANT -----------------------------------#
+#------------------------------------------------------------------------------#
+write.csv(cd_df_copy1, file = "cd_df for prep3.csv")
+
+nd_df<-read.csv(file.choose(), na.strings=c(""," ","NA"), header=TRUE, stringsAsFactors = TRUE, sep = ",") # Load "CSV_DSB_S8_9_Credit"
+nd_df_copy1 <- nd_df 
 
 
 
+str(nd_df) # See if some data types were misclassified when importing data from CSV
+
+#cleaning the data
+nd_df$ID <- as.factor(nd_df$ID)
+nd_df$SEX <- as.factor(nd_df$SEX)
+nd_df$EDUCATION <- as.factor(nd_df$EDUCATION)
+nd_df$MARRIAGE <- as.factor(nd_df$MARRIAGE)
+nd_df$PAY_1 <- as.factor(nd_df$PAY_1)
+nd_df$PAY_2 <- as.factor(nd_df$PAY_2)
+nd_df$PAY_3 <- as.factor(nd_df$PAY_3)
+nd_df$PAY_4 <- as.factor(nd_df$PAY_4)
+nd_df$PAY_5 <- as.factor(nd_df$PAY_5)
+nd_df$PAY_6 <- as.factor(nd_df$PAY_6)
+
+str(nd_df)
+
+#CHECK FOR MISSING VALUES
+colSums(is.na(nd_df))
+
+#CORRECT DATA
+nd_df$MARRIAGE[nd_df$MARRIAGE == 0] <- 3
+nd_df$EDUCATION[nd_df$EDUCATION == 0] <- 5
+nd_df$EDUCATION[nd_df$EDUCATION == 6] <- 5
+
+nd_df <- nd_df %>% add_column(NEG_BILL=0,.before = "BILL_AMT1")
+nd_df$NEG_BILL[nd_df$BILL_AMT1 <0] <- 1
+
+#Featured engineering
+
+#Feature_1: difference with previous period bill amount
+nd_df$Delta_Bill_AMT1_vs_Bill_AMT2 <- as.integer(nd_df$BILL_AMT1 - nd_df$BILL_AMT2) #difference bill_AMT1 vs. bill_AMT2 
+nd_df$Delta_Bill_AMT2_vs_Bill_AMT3 <- as.integer(nd_df$BILL_AMT2 - nd_df$BILL_AMT3) #difference bill_AMT2 vs. bill_AMT3 
+nd_df$Delta_Bill_AMT3_vs_Bill_AMT4 <- as.integer(nd_df$BILL_AMT3 - nd_df$BILL_AMT4) #difference bill_AMT3 vs. bill_AMT4 
+nd_df$Delta_Bill_AMT4_vs_Bill_AMT5 <- as.integer(nd_df$BILL_AMT4 - nd_df$BILL_AMT5) #difference bill_AMT4 vs. bill_AMT5 
+nd_df$Delta_Bill_AMT5_vs_Bill_AMT6 <- as.integer(nd_df$BILL_AMT5 - nd_df$BILL_AMT6) #difference bill_AMT5 vs. bill_AMT6 
+
+#Feature_2: % delta with previous period bill amount
+nd_df$PER_Delta_Bill_AMT1_vs_Bill_AMT2 <- as.double((nd_df$BILL_AMT1 - nd_df$BILL_AMT2)/nd_df$BILL_AMT2) #Percentage difference bill_AMT1 vs. bill_AMT2 
+nd_df$PER_Delta_Bill_AMT2_vs_Bill_AMT3 <- as.double((nd_df$BILL_AMT2 - nd_df$BILL_AMT3)/nd_df$BILL_AMT3) #Percentage difference bill_AMT2 vs. bill_AMT3 
+nd_df$PER_Delta_Bill_AMT3_vs_Bill_AMT4 <- as.double((nd_df$BILL_AMT3 - nd_df$BILL_AMT4)/nd_df$BILL_AMT4) #Percentage difference bill_AMT3 vs. bill_AMT4 
+nd_df$PER_Delta_Bill_AMT4_vs_Bill_AMT5 <- as.double((nd_df$BILL_AMT4 - nd_df$BILL_AMT5)/nd_df$BILL_AMT5) #Percentage difference bill_AMT4 vs. bill_AMT5 
+nd_df$PER_Delta_Bill_AMT5_vs_Bill_AMT6 <- as.double((nd_df$BILL_AMT5 - nd_df$BILL_AMT6)/nd_df$BILL_AMT5) #Percentage difference bill_AMT5 vs. bill_AMT6 
+
+nd_df[is.na(nd_df)] <- 0 #For feature #2, because we sometimes divided by 0, we produced NAN. Here I overwrote these NANs as 0
+nd_df <- nd_df %>% mutate_if(is.numeric, function(x) ifelse(is.infinite(x), 0, x)) #same, taking care of the NaNs
+
+#Feature_3: balance remaining -> Limit_amount - Bill_amount 
+nd_df$Balance_remaining_1 <- as.integer(nd_df$LIMIT_BAL - nd_df$BILL_AMT1)
+nd_df$Balance_remaining_2 <- as.integer(nd_df$LIMIT_BAL - nd_df$BILL_AMT2)
+nd_df$Balance_remaining_3 <- as.integer(nd_df$LIMIT_BAL - nd_df$BILL_AMT3)
+nd_df$Balance_remaining_4 <- as.integer(nd_df$LIMIT_BAL - nd_df$BILL_AMT4)
+nd_df$Balance_remaining_5 <- as.integer(nd_df$LIMIT_BAL - nd_df$BILL_AMT5)
+nd_df$Balance_remaining_6 <- as.integer(nd_df$LIMIT_BAL - nd_df$BILL_AMT6)
+
+#Feature_4: % balance remaining -> (Limit_amount - Bill_amount)/Limit_amount
+nd_df$PER_Balance_remaining_1 <- as.numeric((nd_df$LIMIT_BAL - nd_df$BILL_AMT1)/nd_df$LIMIT_BAL)
+nd_df$PER_Balance_remaining_2 <- as.numeric((nd_df$LIMIT_BAL - nd_df$BILL_AMT2)/nd_df$LIMIT_BAL)
+nd_df$PER_Balance_remaining_3 <- as.numeric((nd_df$LIMIT_BAL - nd_df$BILL_AMT3)/nd_df$LIMIT_BAL)
+nd_df$PER_Balance_remaining_4 <- as.numeric((nd_df$LIMIT_BAL - nd_df$BILL_AMT4)/nd_df$LIMIT_BAL)
+nd_df$PER_Balance_remaining_5 <- as.numeric((nd_df$LIMIT_BAL - nd_df$BILL_AMT5)/nd_df$LIMIT_BAL)
+nd_df$PER_Balance_remaining_6 <- as.numeric((nd_df$LIMIT_BAL - nd_df$BILL_AMT6)/nd_df$LIMIT_BAL)
+
+#Feature_5: Flag --> bill_amount > limit amount 
+nd_df$Limit_Alert_1 <- as.factor(ifelse(nd_df$PER_Balance_remaining_1 <0 , 1, 0))
+nd_df$Limit_Alert_2 <- as.factor(ifelse(nd_df$PER_Balance_remaining_2 <0 , 1, 0))
+nd_df$Limit_Alert_3 <- as.factor(ifelse(nd_df$PER_Balance_remaining_3 <0 , 1, 0))
+nd_df$Limit_Alert_4 <- as.factor(ifelse(nd_df$PER_Balance_remaining_4 <0 , 1, 0))
+nd_df$Limit_Alert_5 <- as.factor(ifelse(nd_df$PER_Balance_remaining_5 <0 , 1, 0))
+nd_df$Limit_Alert_6 <- as.factor(ifelse(nd_df$PER_Balance_remaining_6 <0 , 1, 0))
+
+####Feature engineering using COPY of "nd_df" ##########
+#---------------------------------------#
+#Feature_6: Avg. Pay_X -> Pay_Y category
+nd_df[, "mean_pay_category"] <- apply(nd_df_copy1[, 7:12], 1, mean)
+
+#Feature_7: Max. Pay Category
+nd_df[, "Max_Pay_Category"] <- apply(nd_df_copy1[, 7:12], 1, max)
+
+#Feature_8: Range. Pay Category
+nd_df[, "Range_Pay_Category"] <- (apply(nd_df_copy1[, 7:12], 1, max) - apply(nd_df_copy1[, 7:12], 1, min)) 
+
+#Feature_9: Abs range Bill Amount
+nd_df[, "abs_range_bill_amt"] <- (apply(nd_df_copy1[, 13:18], 1, max) - apply(nd_df_copy1[, 13:18], 1, min))
+
+#Feature_10: Abs range bill as % of limit balance
+nd_df[, "PER_abs_range_bill_amt_vs_Lim_balance"] <- (apply(nd_df_copy1[, 13:18], 1, max) - apply(nd_df_copy1[, 13:18], 1, min))/nd_df_copy1$LIMIT_BAL
+
+#Feature_11: Max delta Pay_Amount_t vs. Bill_Amount_t-1 --> Find the maximum difference between a bill amount (t-1) and the amount actually paid (t)
+nd_df_copy1$delta_Pay_t1_vs_bill_t_minus_1 <- nd_df_copy1$PAY_1 - nd_df_copy1$BILL_AMT2
+nd_df_copy1$delta_Pay_t2_vs_bill_t_minus_3 <- nd_df_copy1$PAY_2 - nd_df_copy1$BILL_AMT3
+nd_df_copy1$delta_Pay_t3_vs_bill_t_minus_4 <- nd_df_copy1$PAY_3 - nd_df_copy1$BILL_AMT4
+nd_df_copy1$delta_Pay_t4_vs_bill_t_minus_5 <- nd_df_copy1$PAY_4 - nd_df_copy1$BILL_AMT5
+nd_df_copy1$delta_Pay_t5_vs_bill_t_minus_6 <- nd_df_copy1$PAY_5 - nd_df_copy1$BILL_AMT6
+
+nd_df$Max_Delta_Pay_vs_Bill <- apply(nd_df_copy1[, 25:29], 1, max)
+
+view(nd_df_copy1)
+view(cd_df)
+str(nd_df)
+
+#change the data to fit with the rare value modifications
+levels(nd_df$PAY_1) <- c("-2","-1","0","1","2","3","4","5","7","8","Other.PAY_1")
+levels(nd_df$PAY_2) <- c("-2","-1","0","2","3","4","6","7","Other.PAY_2")
+levels(nd_df$PAY_3) <- c("-2","-1","0","2","3","4","5","6","7","Other.PAY_3")
+levels(nd_df$PAY_4) <- c("-2","-1","0","2","3","4","5","7","Other.PAY_4")
+levels(nd_df$PAY_5) <- c("-2","-1","0","2","3","4","7","Other.PAY_5")
+levels(nd_df$PAY_6) <- c("-2","-1","0","2","3","5","7","Other.PAY_6")
+
+nd_df$PAY_1[nd_df$PAY_1 == 7] <- "Other.PAY_1"
+nd_df$PAY_1[nd_df$PAY_1 == 8] <- "Other.PAY_1"
+nd_df$PAY_2[nd_df$PAY_2 == 6] <- "Other.PAY_2"
+nd_df$PAY_2[nd_df$PAY_2 == 7] <- "Other.PAY_2"
+nd_df$PAY_3[nd_df$PAY_3 == 5] <- "Other.PAY_3"
+nd_df$PAY_6[nd_df$PAY_6 == 5] <- "Other.PAY_6"
+
+#Get probability
+
+cd_df_model_logistic
+best_t_threshold
+logistic_probabilities<-predict(cd_df_model_logistic,newdata=nd_df, type = "response") #Predict probabilities -- an array with 2 columns: for not retained (class 0) and for retained (class 1)
+
+str(logistic_probabilities)
+view(logistic_probabilities)
+
+logistic_classification<-rep("1",1000)
+logistic_classification[logistic_probabilities<best_t_threshold]="0" #Predict classification using the best threshold.
+logistic_classification <- as.factor(logistic_classification)
+
+view(logistic_classification)
 
 
-
-
-
+write.csv(logistic_classification, file = "ThreatToDemocracyPrediction.Card.csv")
+  
