@@ -497,6 +497,6 @@ logistic_classification <- as.factor(logistic_classification)
 
 view(logistic_classification)
 
-
-write.csv(logistic_classification, file = "ThreatToDemocracyPrediction.Card.csv")
+write.csv(logistic_classification, file = "ToSelectApplicant.csv")
+write.csv(logistic_classification, file = "ThreatToDemocracyPrediction.csv")
   
