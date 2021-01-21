@@ -50,7 +50,6 @@ cd_df$default_0 <- as.factor(cd_df$default_0)
 cd_df = subset(cd_df, select = -c(X))
 
 str(cd_df)
-View(cd_df)
 
 #------------------------------------------------------------------------------#
 #---------------------------CHECK FOR MISSING VALUES---------------------------#
@@ -69,8 +68,6 @@ cd_df$EDUCATION[cd_df$EDUCATION == 6] <- 5
 #create a dummy variable for uncommon account "negative billing" at AMT 1
 cd_df <- cd_df %>% add_column(NEG_BILL=0,.before = "BILL_AMT1")
 cd_df$NEG_BILL[cd_df$BILL_AMT1 <0] <- 1
-
-View(cd_df)
 
 #------------------------------------------------------------------------------#
 #---------------------------CHECK FOR RARE VALUES------------------------------#
@@ -95,19 +92,72 @@ str(cd_df)
 #Correlation matrix
 GGally::ggcorr(cd_df[,-9], hjust = 1, layout.exp = 2, label = T, label_size = 2.9)
 
-
 #------------------------------------------------------------------------------#
 #---------------------------FEATURE ENGINEERING--------------------------------#
 #------------------------------------------------------------------------------#
 
+#Feature_1: difference with previous period bill amount
+cd_df$Delta_Bill_AMT1_vs_Bill_AMT2 <- as.integer(cd_df$BILL_AMT1 - cd_df$BILL_AMT2) #difference bill_AMT1 vs. bill_AMT2 
+cd_df$Delta_Bill_AMT2_vs_Bill_AMT3 <- as.integer(cd_df$BILL_AMT2 - cd_df$BILL_AMT3) #difference bill_AMT2 vs. bill_AMT3 
+cd_df$Delta_Bill_AMT3_vs_Bill_AMT4 <- as.integer(cd_df$BILL_AMT3 - cd_df$BILL_AMT4) #difference bill_AMT3 vs. bill_AMT4 
+cd_df$Delta_Bill_AMT4_vs_Bill_AMT5 <- as.integer(cd_df$BILL_AMT4 - cd_df$BILL_AMT5) #difference bill_AMT4 vs. bill_AMT5 
+cd_df$Delta_Bill_AMT5_vs_Bill_AMT6 <- as.integer(cd_df$BILL_AMT5 - cd_df$BILL_AMT6) #difference bill_AMT5 vs. bill_AMT6 
+
+#Feature_2: % delta with previous period bill amount
+cd_df$PER_Delta_Bill_AMT1_vs_Bill_AMT2 <- as.double((cd_df$BILL_AMT1 - cd_df$BILL_AMT2)/cd_df$BILL_AMT2) #Percentage difference bill_AMT1 vs. bill_AMT2 
+cd_df$PER_Delta_Bill_AMT2_vs_Bill_AMT3 <- as.double((cd_df$BILL_AMT2 - cd_df$BILL_AMT3)/cd_df$BILL_AMT3) #Percentage difference bill_AMT2 vs. bill_AMT3 
+cd_df$PER_Delta_Bill_AMT3_vs_Bill_AMT4 <- as.double((cd_df$BILL_AMT3 - cd_df$BILL_AMT4)/cd_df$BILL_AMT4) #Percentage difference bill_AMT3 vs. bill_AMT4 
+cd_df$PER_Delta_Bill_AMT4_vs_Bill_AMT5 <- as.double((cd_df$BILL_AMT4 - cd_df$BILL_AMT5)/cd_df$BILL_AMT5) #Percentage difference bill_AMT4 vs. bill_AMT5 
+cd_df$PER_Delta_Bill_AMT5_vs_Bill_AMT6 <- as.double((cd_df$BILL_AMT5 - cd_df$BILL_AMT6)/cd_df$BILL_AMT5) #Percentage difference bill_AMT5 vs. bill_AMT6 
+
+cd_df[is.na(cd_df)] <- 0 #For feature #2, because we sometimes divided by 0, we produced NAN. Here I overwrote these NANs as 0
+cd_df <- cd_df %>% mutate_if(is.numeric, function(x) ifelse(is.infinite(x), 0, x)) #same, taking care of the NaNs
+
+#Feature_3: balance remaining -> Limit_amount - Bill_amount 
+cd_df$Balance_remaining_1 <- as.integer(cd_df$LIMIT_BAL - cd_df$BILL_AMT1)
+cd_df$Balance_remaining_2 <- as.integer(cd_df$LIMIT_BAL - cd_df$BILL_AMT2)
+cd_df$Balance_remaining_3 <- as.integer(cd_df$LIMIT_BAL - cd_df$BILL_AMT3)
+cd_df$Balance_remaining_4 <- as.integer(cd_df$LIMIT_BAL - cd_df$BILL_AMT4)
+cd_df$Balance_remaining_5 <- as.integer(cd_df$LIMIT_BAL - cd_df$BILL_AMT5)
+cd_df$Balance_remaining_6 <- as.integer(cd_df$LIMIT_BAL - cd_df$BILL_AMT6)
+
+#Feature_4: % balance remaining -> (Limit_amount - Bill_amount)/Limit_amount
+cd_df$PER_Balance_remaining_1 <- as.numeric((cd_df$LIMIT_BAL - cd_df$BILL_AMT1)/cd_df$LIMIT_BA)
+cd_df$PER_Balance_remaining_2 <- as.numeric((cd_df$LIMIT_BAL - cd_df$BILL_AMT2)/cd_df$LIMIT_BA)
+cd_df$PER_Balance_remaining_3 <- as.numeric((cd_df$LIMIT_BAL - cd_df$BILL_AMT3)/cd_df$LIMIT_BA)
+cd_df$PER_Balance_remaining_4 <- as.numeric((cd_df$LIMIT_BAL - cd_df$BILL_AMT4)/cd_df$LIMIT_BA)
+cd_df$PER_Balance_remaining_5 <- as.numeric((cd_df$LIMIT_BAL - cd_df$BILL_AMT5)/cd_df$LIMIT_BA)
+cd_df$PER_Balance_remaining_6 <- as.numeric((cd_df$LIMIT_BAL - cd_df$BILL_AMT6)/cd_df$LIMIT_BA)
+
+#Feature_5: Flag --> bill_amount > limit amount 
+cd_df$Limit_Alert_1 <- as.factor(ifelse(cd_df$PER_Balance_remaining_1 <0 , 1, 0))
+cd_df$Limit_Alert_2 <- as.factor(ifelse(cd_df$PER_Balance_remaining_2 <0 , 1, 0))
+cd_df$Limit_Alert_3 <- as.factor(ifelse(cd_df$PER_Balance_remaining_3 <0 , 1, 0))
+cd_df$Limit_Alert_4 <- as.factor(ifelse(cd_df$PER_Balance_remaining_4 <0 , 1, 0))
+cd_df$Limit_Alert_5 <- as.factor(ifelse(cd_df$PER_Balance_remaining_5 <0 , 1, 0))
+cd_df$Limit_Alert_6 <- as.factor(ifelse(cd_df$PER_Balance_remaining_6 <0 , 1, 0))
+
+view(cd_df)
+str(cd_df)
+
+
+####Feature engineering backlog##########
+#---------------------------------------#
+#Feature_6: Avg. Pay_X -> Pay_Y category
+
+#Feature_7: Max. Pay Category
+
+#Feature_8: Range. Pay Category
+
+#Feature_9: Abs range Bill Amount
+
+#Feature_10: Abs range bill as % of limit balance
+
+#Feature_11: Max delta Pay_Amount_t vs. Bill_Amount_t-1 --> Find the maximum difference between a bill amount (t-1) and the amount actually paid (t)
+
+
 View(cd_df)
-
-# %delta and abs delta with previous period
-# 
-
-### 1. Look at the delta's between periods (e.g. diff Bill_AMT2 -> Bill_AMT1)
-
-
+View(colSums(is.na(cd_df)))
 
 
 #------------------------------------------------------------------------------#
@@ -139,8 +189,12 @@ cd_df_model_logistic<-glm(default_0 ~
                             AGE + 
                             PAY_1 + PAY_2 + PAY_3 + PAY_4 + PAY_5 + PAY_6 + 
                             BILL_AMT1 + BILL_AMT2 + BILL_AMT3 + BILL_AMT4 + BILL_AMT5 + BILL_AMT6 + 
-                            PAY_AMT1 + PAY_AMT2 + PAY_AMT3 + PAY_AMT4 + PAY_AMT5 + PAY_AMT6,
-                          data=cd_df_training, family="binomial"(link="logit"))
+                            PAY_AMT1 + PAY_AMT2 + PAY_AMT3 + PAY_AMT4 + PAY_AMT5 + PAY_AMT6 +
+                            #Delta_Bill_AMT1_vs_Bill_AMT2 + Delta_Bill_AMT2_vs_Bill_AMT3 + Delta_Bill_AMT3_vs_Bill_AMT4 +Delta_Bill_AMT4_vs_Bill_AMT5 + Delta_Bill_AMT5_vs_Bill_AMT6 + 
+                            PER_Delta_Bill_AMT1_vs_Bill_AMT2 + PER_Delta_Bill_AMT2_vs_Bill_AMT3 + PER_Delta_Bill_AMT3_vs_Bill_AMT4 + PER_Delta_Bill_AMT4_vs_Bill_AMT5 + PER_Delta_Bill_AMT5_vs_Bill_AMT6 +
+                            #Balance_remaining_1 + Balance_remaining_2 + Balance_remaining_3 + Balance_remaining_4 +Balance_remaining_5 + Balance_remaining_6 +
+                            Limit_Alert_1 + Limit_Alert_2 + Limit_Alert_3 + Limit_Alert_4 + Limit_Alert_5 +Limit_Alert_6, 
+                            data=cd_df_training, family="binomial"(link="logit"))
 
 summary(cd_df_model_logistic) 
 
@@ -249,8 +303,6 @@ my_t_threshold_list
 my_expected_value_list
 
 output_logistic_exp_value <- do.call(rbind, Map(data.frame, A=my_t_threshold_list, B=my_expected_value_list))
-
-plot(output_logistic_exp_value$A, output_logistic_exp_value$B)  
 
 ggplot(output_logistic_exp_value, aes(x=A, y=B)) +
   geom_line(color="darkgrey") +
