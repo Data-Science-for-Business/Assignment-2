@@ -466,8 +466,8 @@ nd_df_copy1$delta_Pay_t5_vs_bill_t_minus_6 <- nd_df_copy1$PAY_5 - nd_df_copy1$BI
 
 nd_df$Max_Delta_Pay_vs_Bill <- apply(nd_df_copy1[, 25:29], 1, max)
 
-view(nd_df_copy1)
-view(cd_df)
+#view(nd_df_copy1)
+#view(cd_df)
 str(nd_df)
 
 #change the data to fit with the rare value modifications
@@ -500,7 +500,7 @@ logistic_classification <- as.factor(logistic_classification)
 
 view(logistic_classification)
 
-write.csv(logistic_classification, file = "ToSelectApplicant.csv")
+write.csv(logistic_probabilities, file = "ToSelectApplicant.csv")
 write.csv(logistic_classification, file = "ThreatToDemocracyPrediction.csv")
 
 
