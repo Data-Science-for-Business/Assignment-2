@@ -29,12 +29,13 @@ ctree_tree<-ctree(default_0~
                     #PER_Delta_Bill_AMT1_vs_Bill_AMT2 + PER_Delta_Bill_AMT2_vs_Bill_AMT3 + PER_Delta_Bill_AMT3_vs_Bill_AMT4 + PER_Delta_Bill_AMT4_vs_Bill_AMT5 + PER_Delta_Bill_AMT5_vs_Bill_AMT6 +
                     #Balance_remaining_1 + Balance_remaining_2 + Balance_remaining_3 + Balance_remaining_4 +Balance_remaining_5 + Balance_remaining_6 +
                     #Limit_Alert_1 + Limit_Alert_2 + Limit_Alert_3 + Limit_Alert_4 + Limit_Alert_5 +Limit_Alert_6
+                    + Max_Pay_Category
                     ,data=cd_df_training) #Run ctree on training data
 plot(ctree_tree, gp = gpar(fontsize = 8)) #Plotting the tree (adjust fontsize if needed)
 
 ctree_probabilities<-predict(ctree_tree,newdata=cd_df_testing,type="prob") #Predict probabilities
 ctree_classification<-rep("1",500)
-ctree_classification[ctree_probabilities[,2]<0.6073]="0" #Predict classification using 0.6073 threshold. Why 0.6073 - that's the average probability of being retained in the data. An alternative code: logistic_classification <- as.integer(logistic_probabilities > mean(testing$default_0 == "1"))
+ctree_classification[ctree_probabilities[,2]< mean(cd_df_testing$default_0 == "1")]="0" #Predict classification using 0.6073 threshold. Why 0.6073 - that's the average probability of being retained in the data. An alternative code: logistic_classification <- as.integer(logistic_probabilities > mean(testing$default_0 == "1"))
 ctree_classification<-as.factor(ctree_classification)
 
 ###Confusion matrix  
@@ -75,9 +76,10 @@ rpart_tree<-rpart(default_0~
                   #PER_Delta_Bill_AMT1_vs_Bill_AMT2 + PER_Delta_Bill_AMT2_vs_Bill_AMT3 + PER_Delta_Bill_AMT3_vs_Bill_AMT4 + PER_Delta_Bill_AMT4_vs_Bill_AMT5 + PER_Delta_Bill_AMT5_vs_Bill_AMT6 +
                   #Balance_remaining_1 + Balance_remaining_2 + Balance_remaining_3 + Balance_remaining_4 +Balance_remaining_5 + Balance_remaining_6 +
                   #Limit_Alert_1 + Limit_Alert_2 + Limit_Alert_3 + Limit_Alert_4 + Limit_Alert_5 +Limit_Alert_6
+                  + Max_Pay_Category
                   ,data=cd_df_training, method="class", control=CART_cp) #"Grow" a tree on training data
 
-prunned_rpart_tree<-prune(rpart_tree, cp=0.0015) #Prune the tree. Play with cp to see how the resultant tree changes
+prunned_rpart_tree<-prune(rpart_tree, cp=0.0015) #Prune the tree. CP value is largest that does not cause a substantial drop in error
 plot(as.party(prunned_rpart_tree), type = "extended",gp = gpar(fontsize = 7)) #Plotting the tree (adjust fontsize if needed)
 
 # Understand the relationship between the cross-validated error, size of the tree and cp.
@@ -121,15 +123,16 @@ model_forest <- randomForest(default_0~
                                PAY_1 + PAY_2 + PAY_3 + PAY_4 + PAY_5 + PAY_6 + 
                                BILL_AMT1 + BILL_AMT2 + BILL_AMT3 + BILL_AMT4 + BILL_AMT5 + BILL_AMT6 + 
                                PAY_AMT1 + PAY_AMT2 + PAY_AMT3 + PAY_AMT4 + PAY_AMT5 + PAY_AMT6
-                             #+ Delta_Bill_AMT1_vs_Bill_AMT2 + Delta_Bill_AMT2_vs_Bill_AMT3 + Delta_Bill_AMT3_vs_Bill_AMT4 +Delta_Bill_AMT4_vs_Bill_AMT5 + Delta_Bill_AMT5_vs_Bill_AMT6 + 
-                             #PER_Delta_Bill_AMT1_vs_Bill_AMT2 + PER_Delta_Bill_AMT2_vs_Bill_AMT3 + PER_Delta_Bill_AMT3_vs_Bill_AMT4 + PER_Delta_Bill_AMT4_vs_Bill_AMT5 + PER_Delta_Bill_AMT5_vs_Bill_AMT6 +
-                             #Balance_remaining_1 + Balance_remaining_2 + Balance_remaining_3 + Balance_remaining_4 +Balance_remaining_5 + Balance_remaining_6 +
+                             #+ Delta_Bill_AMT1_vs_Bill_AMT2 + Delta_Bill_AMT2_vs_Bill_AMT3 + Delta_Bill_AMT3_vs_Bill_AMT4 +Delta_Bill_AMT4_vs_Bill_AMT5 + Delta_Bill_AMT5_vs_Bill_AMT6
+                             #+ PER_Delta_Bill_AMT1_vs_Bill_AMT2 + PER_Delta_Bill_AMT2_vs_Bill_AMT3 + PER_Delta_Bill_AMT3_vs_Bill_AMT4 + PER_Delta_Bill_AMT4_vs_Bill_AMT5 + PER_Delta_Bill_AMT5_vs_Bill_AMT6
+                             #+ Balance_remaining_1 + Balance_remaining_2 + Balance_remaining_3 + Balance_remaining_4 +Balance_remaining_5 + Balance_remaining_6 +
                              #Limit_Alert_1 + Limit_Alert_2 + Limit_Alert_3 + Limit_Alert_4 + Limit_Alert_5 +Limit_Alert_6
+                             + Max_Pay_Category
                              , data=cd_df_training, 
                              type="classification",
                              importance=TRUE,
-                             ntree = 500,           # hyperparameter: number of trees in the forest
-                             mtry = 10,             # hyperparameter: number of random columns to grow each tree
+                             ntree = 800,           # hyperparameter: number of trees in the forest
+                             mtry = 12,             # hyperparameter: number of random columns to grow each tree
                              nodesize = 10,         # hyperparameter: min number of datapoints on the leaf of each tree
                              maxnodes = 10,         # hyperparameter: maximum number of leafs of a tree
                              cutoff = c(0.5, 0.5)   # hyperparameter: how the voting works; (0.5, 0.5) means majority vote
@@ -141,7 +144,7 @@ varImpPlot(model_forest) # plots variable importances; use importance(model_fore
 
 ###Finding predicitons: probabilities and classification
 forest_probabilities<-predict(model_forest,newdata=cd_df_testing,type="prob") #Predict probabilities -- an array with 2 columns: for not retained (class 0) and for retained (class 1)
-forest_classification<-rep("1",500)
+forest_classification<-rep("1",800)
 forest_classification[forest_probabilities[,2]<0.5]="0" #Predict classification using 0.5 threshold. Why 0.5 and not 0.6073? Use the same as in cutoff above
 forest_classification<-as.factor(forest_classification)
 
